@@ -4,77 +4,86 @@ import joblib
 import pandas as pd
 from fastapi.middleware.cors import CORSMiddleware
 
-# 1. Initialize the Application
+# 1. Initialize the App
 app = FastAPI(
-    title="Insurance Cost Prediction API",
-    description="A simple API to predict medical insurance charges based on user data.",
-    version="1.0.0"
+    title="EcoCar CO2 Predictor",
+    description="API to predict car CO2 emissions based on engine specs.",
+    version="2.0.0"
 )
 
-# 2. Add CORS Middleware (REQUIRED by assignment)
+# 2. CORS Middleware (Rubric Requirement)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows connections from anywhere
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods (POST, GET, etc.)
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 3. Load the Saved Model and Scaler
+# 3. Load the New CO2 Model Files
 try:
-    model = joblib.load('my_best_insurance_model.pkl')
+    model = joblib.load('my_best_co2_model.pkl')
     scaler = joblib.load('my_scaler.pkl')
     model_columns = joblib.load('model_columns.pkl')
-    print("✅ Model and tools loaded successfully.")
+    print("✅ CO2 Model and tools loaded successfully.")
 except Exception as e:
     print(f"❌ Error loading files: {e}")
 
-# 4. Define Input Data Rules (Pydantic & Range Constraints)
-class InsuranceInput(BaseModel):
-    # Enforced types (int, float, str) and Ranges (gt=greater than, le=less than or equal)
-    age: int = Field(..., gt=0, le=100, description="Age (1-100)")
-    sex: str = Field(..., pattern="^(male|female)$", description="male or female")
-    bmi: float = Field(..., gt=10.0, lt=60.0, description="BMI (10-60)")
-    children: int = Field(..., ge=0, le=20, description="Children (0-20)")
-    smoker: str = Field(..., pattern="^(yes|no)$", description="yes or no")
-    region: str = Field(..., pattern="^(southwest|southeast|northwest|northeast)$", description="US Region")
+# 4. Define Input Rules (Pydantic)
+# We need: Engine Size, Cylinders, Combined Consumption, Fuel Type
+class CarInput(BaseModel):
+    engine_size: float = Field(..., gt=0.0, le=10.0, description="Engine Size in Liters (0.0 - 10.0)")
+    cylinders: int = Field(..., gt=2, le=16, description="Number of Cylinders (3-16)")
+    fuel_consumption: float = Field(..., gt=0.0, le=50.0, description="Combined Fuel Cons (L/100km)")
+    fuel_type: str = Field(..., pattern="^(X|Z|D|E)$", description="Fuel: X(Regular), Z(Premium), D(Diesel), E(Ethanol)")
 
     class Config:
         schema_extra = {
             "example": {
-                "age": 30,
-                "sex": "male",
-                "bmi": 28.5,
-                "children": 1,
-                "smoker": "no",
-                "region": "southeast"
+                "engine_size": 3.5,
+                "cylinders": 6,
+                "fuel_consumption": 11.2,
+                "fuel_type": "Z"
             }
         }
 
-# 5. The Prediction Endpoint (POST Request)
+# 5. Prediction Endpoint
 @app.post("/predict")
-def predict_insurance_cost(input_data: InsuranceInput):
+def predict_emissions(input_data: CarInput):
     try:
-        # Convert input to DataFrame
-        data_dict = input_data.dict()
+        # A. Convert Input to Dictionary
+        # Map Pydantic fields to the exact column names used in Colab
+        data_dict = {
+            "Engine_Size": input_data.engine_size,
+            "Cylinders": input_data.cylinders,
+            "Comb_Cons": input_data.fuel_consumption,
+            "Fuel_Type": input_data.fuel_type
+        }
+        
+        # B. Convert to DataFrame
         input_df = pd.DataFrame([data_dict])
         
-        # Preprocessing: One-Hot Encoding
+        # C. Preprocessing (One-Hot Encoding)
         input_encoded = pd.get_dummies(input_df)
         
-        # Ensure columns match training data (add missing columns as 0)
+        # D. Align Columns (Add missing Fuel_Type columns with 0)
         input_encoded = input_encoded.reindex(columns=model_columns, fill_value=0)
         
-        # Scale the data
+        # E. Scale the Data
         input_scaled = scaler.transform(input_encoded)
         
-        # Predict
+        # F. Predict
         prediction = model.predict(input_scaled)
         
         return {
-            "predicted_cost": float(prediction[0]),
+            "predicted_co2": float(prediction[0]),
             "message": "Prediction successful"
         }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# Root Endpoint
+@app.get("/")
+def read_root():
+    return {"message": "CO2 Emission API is Live. Go to /docs to test."}
