@@ -1,101 +1,140 @@
+# EcoCar Analyzer: Intelligent CO₂ Emission Predictor
 
------
+## 1. Mission & Problem Statement
 
-````markdown
-# 🌿 EcoCar Analyzer: CO2 Emission Prediction
+Climate change is one of the most pressing challenges of our time, with vehicular emissions being a major contributor. The **EcoCar Analyzer** project aims to empower consumers and manufacturers by providing accurate predictions of a vehicle's Carbon Dioxide (CO₂) emissions based on its engine specifications.
 
-## 1. Mission & Problem Description
-The goal of this project is to build a Machine Learning tool that accurately predicts the Carbon Dioxide (CO₂) emissions of vehicles based on their engine specifications. By analyzing factors like Engine Size, Cylinders, and Fuel Consumption, this app helps drivers and manufacturers estimate the environmental impact of cars, promoting eco-friendly transportation choices.
+By analyzing key technical factors such as **Engine Size**, **Cylinder count**, and **Fuel Consumption** this tool democratizes environmental data, enabling more eco-conscious transportation choices.
+
+---
 
 ## 2. Data Description & Source
-**Source:** The dataset was sourced from [IBM / Canada Open Data](https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBMDeveloperSkillsNetwork-ML0101EN-SkillsNetwork/labs/Module%202/data/FuelConsumptionCo2.csv).
 
-**Dataset Details:**
-* **Volume:** 1,067 vehicle records.
-* **Variety:**
-    * **Numerical Inputs:** Engine Size (L), Cylinders, Combined Fuel Consumption (L/100km).
-    * **Categorical Inputs:** Fuel Type (Regular Gasoline, Premium, Diesel, Ethanol).
-    * **Target Output:** CO2 Emissions (g/km).
-* **Key Insight:** The analysis revealed a strong positive correlation between Engine Size and Emissions, but specific fuel types (like Ethanol) created non-linear patterns that required advanced modeling.
+The machine learning model was trained on the **Fuel Consumption Ratings** dataset, sourced from **Canada Open Data** (via IBM Developer Skills Network).
 
-## 3. Public API Access
-The prediction engine is deployed as a REST API using **FastAPI** and hosted on **Render**. It features strict Pydantic validation to ensure realistic inputs (e.g., preventing negative engine sizes).
+**Source URL:** https://www.kaggle.com/code/ginny100/ibm-ai-engineering-simple-linear-regression 
 
-* **🚀 Base URL:** `https://[YOUR-APP-NAME].onrender.com`
-* **📄 Swagger UI (Docs & Testing):** `https://[YOUR-APP-NAME].onrender.com/docs`
+### Dataset Statistics
 
-> **Note:** You can test the API directly using the Swagger UI link above.
+* **Volume:** 1,067 unique vehicle records
+* **Variety:** Numerical & Categorical data
 
-## 4. Video Demo
-A 5-minute walkthrough demonstrating the Model training, API deployment, and the Mobile App in action:
+### Key Features
 
-* **🎥 YouTube Link:** [PASTE YOUR YOUTUBE LINK HERE]
+* **Inputs (X):** Engine Size (L), Cylinders, Fuel Consumption (L/100km), Fuel Type (Regular, Premium, Ethanol, Diesel)
+* **Target (y):** CO₂ Emissions (g/km)
 
-## 5. Project Structure
-The repository is organized as follows:
+**Insight:** Exploratory Data Analysis (EDA) revealed a strong linear correlation between Engine Size and Emissions, with additional non-linear effects introduced by differing fuel types.
 
-```text
+---
+
+## 3. Technical Architecture
+
+This project follows a **decoupled Client-Server Architecture**:
+
+### Machine Learning Pipeline (Python/Jupyter)
+
+* Data Cleaning
+* Feature Engineering (One-Hot Encoding)
+* Model Training
+
+### Backend API (FastAPI)
+
+* REST model-serving endpoints
+* Pydantic for strict data validation
+* CORS middleware for secure access
+
+### Frontend Mobile App (Flutter)
+
+* Responsive high-contrast interface
+* Designed for efficient user interaction
+
+---
+
+## 4. Model Performance
+
+Three regression algorithms were trained and evaluated using **Mean Squared Error (MSE)** and **R² Score**.
+
+| Model             | R² Score | Loss (MSE) | Verdict                                              |
+| ----------------- | -------- | ---------- | ---------------------------------------------------- |
+| Linear Regression | 0.9881   | 49.19      | High accuracy, but missed subtle fuel-type variances |
+| Random Forest     | 0.9908   | 37.86      | Excellent performance, slightly higher complexity    |
+| Decision Tree     | 0.9936   | 26.47      | **WINNER**                                           |
+
+**Justification:** The **Decision Tree Regressor** was deployed because it achieved the lowest MSE (26.47) and best captured categorical fuel-type behavior.
+
+---
+
+## 5. Public API Access
+
+The prediction engine is deployed on **Render** and publicly accessible.
+
+* **Base Endpoint:** `https://[YOUR-APP-NAME].onrender.com`
+* **Docs (Swagger UI):** `https://[YOUR-APP-NAME].onrender.com/docs`
+
+### Example JSON Request
+
+```json
+POST /predict
+{
+  "engine_size": 2.4,
+  "cylinders": 4,
+  "fuel_consumption": 8.5,
+  "fuel_type": "X"
+}
+```
+
+---
+
+## 6. Video Demo
+
+A detailed 5-minute demonstration covering model training, API deployment, and a live walkthrough of the mobile application.
+
+**Click Here to Watch the Video Demo**
+
+---
+
+## 7. How to Run the Mobile App
+
+The mobile application is built using **Flutter**.
+
+### Prerequisites
+
+* Flutter SDK installed
+* Android Emulator or physical device connected
+
+### Installation Steps
+
+```bash
+cd summative/FlutterApp
+flutter pub get
+flutter run
+```
+
+---
+
+## 8. Project Structure
+
+```
 linear_regression_model/
 │
 ├── summative/
 │   ├── linear_regression/
-│   │   ├── multivariate.ipynb      # Jupyter Notebook (Data Analysis, Model Training)
+│   │   ├── multivariate.ipynb      # Jupyter Notebook (Analysis & Training)
 │   │
 │   ├── API/
-│   │   ├── main.py                 # FastAPI backend code (Prediction logic)
-│   │   ├── requirements.txt        # Python dependencies
-│   │   ├── my_best_co2_model.pkl   # Saved Decision Tree Model
-│   │   ├── my_scaler.pkl           # Saved Scaler
-│   │   ├── model_columns.pkl       # Saved Column names
+│   │   ├── main.py                 # FastAPI Application Code
+│   │   ├── requirements.txt        # Backend Dependencies
+│   │   ├── my_best_co2_model.pkl   # Serialized Model
+│   │   ├── my_scaler.pkl           # Data Scaler
+│   │   ├── model_columns.pkl       # Feature alignment
 │   │
 │   ├── FlutterApp/
 │       ├── lib/
-│       │   ├── main.dart           # Flutter Mobile App Source Code
-│       ├── pubspec.yaml            # Flutter dependencies
-````
-
-## 6\. Model Performance
-
-We trained three different regression models to find the best predictor. The **Decision Tree Regressor** was selected as the winner.
-
-| Model | R² Score | Loss (MSE) | Verdict |
-| :--- | :--- | :--- | :--- |
-| **Linear Regression** | 0.9881 | 49.19 | Excellent fit, but missed subtle fuel-type rules. |
-| **Decision Tree** | **0.9936** | **26.47** | **Selected.** Lowest error; captured exact rules perfectly. |
-| **Random Forest** | 0.9908 | 37.86 | Very strong, but slightly higher error than the single tree. |
-
-## 7\. How to Run the Mobile App
-
-The mobile application is built with **Flutter** and features a responsive "Pro-UX" design with real-time input validation.
-
-### Prerequisites
-
-  * Install the [Flutter SDK](https://docs.flutter.dev/get-started/install).
-  * Ensure you have an Emulator running or a physical device connected via USB.
-
-### Installation Steps
-
-1.  **Navigate to the App folder:**
-
-    ```bash
-    cd summative/FlutterApp
-    ```
-
-2.  **Install Dependencies:**
-
-    ```bash
-    flutter pub get
-    ```
-
-3.  **Run the App:**
-
-    ```bash
-    flutter run
-    ```
-
------
-
-*Developed by Paulette for the Linear Regression Summative Assignment.*
-
+│       │   ├── main.dart           # Mobile App Source Code
+│       ├── pubspec.yaml            # App Configuration
 ```
-```
+
+---
+
+**Developed by Paulette for the Linear Regression Summative Assignment.**
