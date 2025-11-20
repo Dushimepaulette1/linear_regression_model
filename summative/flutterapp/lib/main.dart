@@ -3,220 +3,178 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 void main() {
-  runApp(const InsuranceApp());
+  runApp(const EcoCarProApp());
 }
 
-class InsuranceApp extends StatelessWidget {
-  const InsuranceApp({super.key});
+// --- 🎨 PRO THEME: High Contrast & Friendly ---
+class AppColors {
+  static const Color background = Color(0xFFF8F9FA); // Crisp Off-White
+  static const Color cardColor = Colors.white;
+  static const Color primaryBrand = Color(
+    0xFF2E7D32,
+  ); // Professional Forest Green
+  static const Color accentGreen = Color(0xFF00C853); // Bright Highlight
+  static const Color textDark = Color(
+    0xFF1A1A1A,
+  ); // Almost Black (High Readability)
+  static const Color textGrey = Color(0xFF546E7A); // Blue-Grey for subtitles
+  static const Color errorRed = Color(0xFFD32F2F); // Readable Red
+}
+
+class EcoCarProApp extends StatelessWidget {
+  const EcoCarProApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'MediCost AI',
+      title: 'EcoCar Analyzer',
       theme: ThemeData(
-        // 🎨 Professional Feminine Theme: Mulberry & Rose
-        primaryColor: const Color(0xFF880E4F),
-        colorScheme: ColorScheme.fromSwatch().copyWith(
-          primary: const Color(0xFF880E4F),
-          secondary: const Color(0xFFBC477B),
-        ),
-        scaffoldBackgroundColor: const Color(
-          0xFFFDF7F9,
-        ), // Very light rose-grey background
+        scaffoldBackgroundColor: AppColors.background,
+        primaryColor: AppColors.primaryBrand,
         useMaterial3: true,
-        fontFamily: 'Roboto', // Clean, standard font
+        fontFamily: 'Roboto',
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          primary: AppColors.primaryBrand,
+          secondary: AppColors.accentGreen,
+        ),
+        // Making the inputs look inviting and clear
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: Colors.white,
+          fillColor: AppColors.cardColor,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 20,
+          ),
+          labelStyle: const TextStyle(
+            color: AppColors.textGrey,
+            fontWeight: FontWeight.w500,
+          ),
+          floatingLabelStyle: const TextStyle(
+            color: AppColors.primaryBrand,
+            fontWeight: FontWeight.bold,
+          ),
+          helperStyle: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+          errorStyle: const TextStyle(
+            color: AppColors.errorRed,
+            fontWeight: FontWeight.bold,
+          ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15), // Softer rounded corners
-            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(color: Colors.purple.shade50),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: Color(0xFF880E4F), width: 1.5),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: AppColors.primaryBrand,
+              width: 2.5,
+            ),
           ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 18,
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.errorRed, width: 1.5),
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primaryBrand,
+            foregroundColor: Colors.white,
+            elevation: 4,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
           ),
         ),
       ),
-      home: const PredictionScreen(),
+      home: const HomeScreen(),
     );
   }
 }
 
-class PredictionScreen extends StatefulWidget {
-  const PredictionScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<PredictionScreen> createState() => _PredictionScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _PredictionScreenState extends State<PredictionScreen> {
+class _HomeScreenState extends State<HomeScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // --- Controllers ---
-  final TextEditingController _ageController = TextEditingController();
-  final TextEditingController _bmiController = TextEditingController();
-  final TextEditingController _childrenController = TextEditingController();
-
-  // --- Variables ---
-  String? _selectedSex;
-  String? _selectedSmoker;
-  String? _selectedRegion;
+  // --- Input Controllers ---
+  final TextEditingController _engineController = TextEditingController();
+  final TextEditingController _cylindersController = TextEditingController();
+  final TextEditingController _fuelConsController = TextEditingController();
+  String? _selectedFuelType;
 
   // --- State ---
-  String _result = "";
-  List<String> _insights = []; // To store the "Why" explanations
+  String _co2Result = "0";
+  String _statusMessage = "Ready to Analyze";
   bool _isLoading = false;
-  bool _isError = false;
+  bool _hasResult = false;
 
-  // --- 🧮 BMI Calculator ---
-  void _showBMICalculator() {
-    final TextEditingController heightController = TextEditingController();
-    final TextEditingController weightController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          "BMI Calculator",
-          style: TextStyle(color: Color(0xFF880E4F)),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              "Enter your stats to calculate BMI automatically.",
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 15),
-            TextField(
-              controller: heightController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: "Height (cm)",
-                suffixText: "cm",
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: weightController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: "Weight (kg)",
-                suffixText: "kg",
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final double? h = double.tryParse(heightController.text);
-              final double? w = double.tryParse(weightController.text);
-
-              if (h != null && w != null && h > 0) {
-                final double heightInMeters = h / 100;
-                final double bmi = w / (heightInMeters * heightInMeters);
-                setState(() {
-                  _bmiController.text = bmi.toStringAsFixed(1);
-                });
-                Navigator.pop(context);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF880E4F),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text("Calculate"),
-          ),
-        ],
-      ),
-    );
+  // --- Validation Logic (User Friendly Messages) ---
+  String? _validateEngine(String? val) {
+    if (val == null || val.isEmpty) return "Please enter engine size.";
+    final n = double.tryParse(val);
+    if (n == null) return "Numbers only (e.g. 2.0)";
+    if (n <= 0) return "Must be greater than 0";
+    if (n > 10) return "Max engine size is 10.0 Liters"; // Specific help!
+    return null;
   }
 
-  // --- 🧠 Analysis Logic (Client Side) ---
-  // This generates the "Explanation" based on inputs
-  List<String> _generateInsights(
-    double bmi,
-    String smoker,
-    int age,
-    int children,
-  ) {
-    List<String> notes = [];
-
-    if (smoker == "yes") {
-      notes.add(
-        "⚠️ Smoker Status: This is the #1 factor increasing your cost.",
-      );
-    } else {
-      notes.add("✅ Non-Smoker: You are saving significantly by not smoking.");
-    }
-
-    if (bmi >= 30) {
-      notes.add(
-        "⚠️ BMI (${bmi.toStringAsFixed(1)}): Being in the obesity range increases health risks and premiums.",
-      );
-    } else if (bmi < 18.5) {
-      notes.add(
-        "ℹ️ BMI: Being underweight can sometimes affect health ratings.",
-      );
-    } else {
-      notes.add("✅ BMI: Your healthy weight helps keep costs lower.");
-    }
-
-    if (age > 50) {
-      notes.add("ℹ️ Age: Insurance premiums naturally rise as age increases.");
-    }
-
-    if (children > 2) {
-      notes.add(
-        "ℹ️ Dependents: Covering ${children} children adds to the base premium.",
-      );
-    }
-
-    return notes;
+  String? _validateCylinders(String? val) {
+    if (val == null || val.isEmpty) return "Please enter cylinders.";
+    final n = int.tryParse(val);
+    if (n == null) return "Whole numbers only (e.g. 4)";
+    if (n < 3) return "Minimum 3 cylinders required"; // Specific help!
+    if (n > 16) return "Max 16 cylinders allowed";
+    return null;
   }
 
-  // --- API Function ---
-  Future<void> _makePrediction() async {
+  String? _validateFuel(String? val) {
+    if (val == null || val.isEmpty) return "Required.";
+    final n = double.tryParse(val);
+    if (n == null) return "Numbers only.";
+    if (n <= 0) return "Must be positive.";
+    if (n > 50) return "Max consumption is 50 L/100km"; // Specific help!
+    return null;
+  }
+
+  // --- API Logic ---
+  Future<void> _calculateEmission() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedFuelType == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select a Fuel Type")),
+      );
+      return;
+    }
 
     setState(() {
       _isLoading = true;
-      _result = "";
-      _insights = [];
-      _isError = false;
+      _statusMessage = "Analyzing vehicle specs...";
     });
 
     // ⚠️ PASTE YOUR RENDER URL HERE
     const String apiUrl = 'https://my-insurance-api.onrender.com/predict';
 
     try {
-      final double bmi = double.parse(_bmiController.text);
-      final int age = int.parse(_ageController.text);
-      final int children = int.parse(_childrenController.text);
-
-      final Map<String, dynamic> requestData = {
-        "age": age,
-        "sex": _selectedSex,
-        "bmi": bmi,
-        "children": children,
-        "smoker": _selectedSmoker,
-        "region": _selectedRegion,
+      final requestData = {
+        "engine_size": double.parse(_engineController.text),
+        "cylinders": int.parse(_cylindersController.text),
+        "fuel_consumption": double.parse(_fuelConsController.text),
+        "fuel_type": _selectedFuelType,
       };
 
       final response = await http.post(
@@ -227,22 +185,23 @@ class _PredictionScreenState extends State<PredictionScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final co2 = data['predicted_co2'];
         setState(() {
-          double cost = data['predicted_cost'];
-          _result = "\$${cost.toStringAsFixed(2)}";
-          // Generate the "Why" explanation
-          _insights = _generateInsights(bmi, _selectedSmoker!, age, children);
+          _co2Result = (co2 as double).toStringAsFixed(0);
+          _statusMessage = co2 < 250
+              ? "✅ Low Emissions (Eco-Friendly)"
+              : "⚠️ High Emissions (Gas Heavy)";
+          _hasResult = true;
         });
       } else {
         setState(() {
-          _isError = true;
-          _result = "Server Error: ${response.statusCode}";
+          _statusMessage =
+              "Server Error: ${response.statusCode}. Check inputs.";
         });
       }
     } catch (e) {
       setState(() {
-        _isError = true;
-        _result = "Connection Failed.";
+        _statusMessage = "Connection Failed. Check internet.";
       });
     } finally {
       setState(() {
@@ -254,368 +213,295 @@ class _PredictionScreenState extends State<PredictionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Custom Gradient AppBar
-      appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color(0xFF880E4F),
-                Color(0xFFC2185B),
-              ], // Mulberry Gradient
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-        elevation: 4,
-        title: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.favorite,
-              color: Colors.white,
-            ), // Heart icon for wellness feel
-            SizedBox(width: 10),
-            Text(
-              "MediCost Insights",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Intro Text
-              const Text(
-                "Your Health Profile",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF880E4F),
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                "Enter your details below to get a personalized insurance cost estimate.",
-                style: TextStyle(color: Colors.grey[700], height: 1.5),
-              ),
-              const SizedBox(height: 25),
-
-              // --- INPUT CARD ---
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.purple.withOpacity(0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Column(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.stretch, // Makes everything full width
+              children: [
+                // --- HEADER ---
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // ROW 1: Age & Sex
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _ageController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: "Age",
-                              prefixIcon: Icon(
-                                Icons.cake_outlined,
-                                color: Color(0xFFBC477B),
-                              ),
-                            ),
-                            validator: (value) =>
-                                value!.isEmpty ? "Required" : null,
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: _selectedSex,
-                            decoration: const InputDecoration(
-                              labelText: "Sex",
-                              prefixIcon: Icon(
-                                Icons.person_outline,
-                                color: Color(0xFFBC477B),
-                              ),
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: "female",
-                                child: Text("Female"),
-                              ),
-                              DropdownMenuItem(
-                                value: "male",
-                                child: Text("Male"),
-                              ),
-                            ],
-                            onChanged: (val) =>
-                                setState(() => _selectedSex = val),
-                            validator: (value) =>
-                                value == null ? "Required" : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // ROW 2: BMI & Children
-                    Row(
+                    const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          flex: 3,
-                          child: TextFormField(
-                            controller: _bmiController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            decoration: InputDecoration(
-                              labelText: "BMI",
-                              prefixIcon: const Icon(
-                                Icons.monitor_weight_outlined,
-                                color: Color(0xFFBC477B),
-                              ),
-                              suffixIcon: IconButton(
-                                icon: const Icon(
-                                  Icons.calculate_outlined,
-                                  color: Color(0xFF880E4F),
-                                ),
-                                tooltip: "Calculate BMI",
-                                onPressed: _showBMICalculator,
-                              ),
-                            ),
-                            validator: (value) =>
-                                value!.isEmpty ? "Required" : null,
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          flex: 2,
-                          child: TextFormField(
-                            controller: _childrenController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: "Children",
-                              prefixIcon: Icon(
-                                Icons.child_care,
-                                color: Color(0xFFBC477B),
-                              ),
-                            ),
-                            validator: (value) =>
-                                value!.isEmpty ? "Required" : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Smoker Status
-                    DropdownButtonFormField<String>(
-                      value: _selectedSmoker,
-                      decoration: const InputDecoration(
-                        labelText: "Do you smoke?",
-                        prefixIcon: Icon(
-                          Icons.smoke_free_outlined,
-                          color: Color(0xFFBC477B),
-                        ),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: "yes",
-                          child: Text("Yes, I smoke"),
-                        ),
-                        DropdownMenuItem(
-                          value: "no",
-                          child: Text("No, I don't"),
-                        ),
-                      ],
-                      onChanged: (val) => setState(() => _selectedSmoker = val),
-                      validator: (value) => value == null ? "Required" : null,
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Region
-                    DropdownButtonFormField<String>(
-                      value: _selectedRegion,
-                      decoration: const InputDecoration(
-                        labelText: "Region (USA)",
-                        prefixIcon: Icon(
-                          Icons.map_outlined,
-                          color: Color(0xFFBC477B),
-                        ),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: "southwest",
-                          child: Text("Southwest"),
-                        ),
-                        DropdownMenuItem(
-                          value: "southeast",
-                          child: Text("Southeast"),
-                        ),
-                        DropdownMenuItem(
-                          value: "northwest",
-                          child: Text("Northwest"),
-                        ),
-                        DropdownMenuItem(
-                          value: "northeast",
-                          child: Text("Northeast"),
-                        ),
-                      ],
-                      onChanged: (val) => setState(() => _selectedRegion = val),
-                      validator: (value) => value == null ? "Required" : null,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              // --- ACTION BUTTON ---
-              Container(
-                width: double.infinity,
-                height: 60,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF880E4F), Color(0xFFC2185B)],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF880E4F).withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _makePrediction,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          "ANALYZE COSTS",
+                        Text(
+                          "EcoCar",
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 1,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.primaryBrand,
                           ),
                         ),
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              // --- RESULTS SECTION ---
-              if (_result.isNotEmpty) ...[
-                const Divider(),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(25),
-                  decoration: BoxDecoration(
-                    color: _isError
-                        ? Colors.red.shade50
-                        : const Color(0xFFF3E5F5), // Light Purple background
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: _isError ? Colors.red : const Color(0xFFCE93D8),
+                        Text(
+                          "Analyzer",
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w300,
+                            color: AppColors.textDark,
+                          ),
+                        ),
+                      ],
                     ),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryBrand.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.public,
+                        color: AppColors.primaryBrand,
+                        size: 32,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // --- INTRO CARD (User Request) ---
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.blueGrey.shade100),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  child: Column(
+                  child: const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Center(
-                        child: Text(
-                          _isError ? "Error" : "Estimated Annual Premium",
-                          style: TextStyle(
-                            color: _isError
-                                ? Colors.red
-                                : const Color(0xFF6A1B9A),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            letterSpacing: 1.2,
-                          ),
+                      Text(
+                        "What is this tool?",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textDark,
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Center(
-                        child: Text(
-                          _result,
-                          style: TextStyle(
-                            color: _isError
-                                ? Colors.red
-                                : const Color(0xFF4A148C),
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      SizedBox(height: 8),
+                      Text(
+                        "Emission Analyzer is a smart tool designed to predict how much Carbon Dioxide (CO₂) new cars emit. By analyzing engine size and fuel consumption, we help you understand the environmental impact of your vehicle.",
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.5,
+                          color: AppColors.textGrey,
                         ),
                       ),
-                      const SizedBox(height: 20),
-
-                      // --- THE "WHY?" SECTION ---
-                      if (!_isError) ...[
-                        const Text(
-                          "Factors Influencing this Price:",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF6A1B9A),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        ..._insights.map(
-                          (insight) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(
-                                  Icons.arrow_right,
-                                  color: Color(0xFF880E4F),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    insight,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      height: 1.3,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
+                const SizedBox(height: 30),
+
+                // --- RESULT DASHBOARD ---
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 500),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 24,
+                    horizontal: 20,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: _hasResult
+                          ? [AppColors.primaryBrand, AppColors.accentGreen]
+                          : [Colors.grey.shade800, Colors.grey.shade700],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _hasResult
+                            ? AppColors.accentGreen.withOpacity(0.4)
+                            : Colors.transparent,
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        _hasResult ? "PREDICTED CO₂ OUTPUT" : "AWAITING INPUTS",
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _hasResult ? _co2Result : "--",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 64,
+                              fontWeight: FontWeight.bold,
+                              height: 1,
+                            ),
+                          ),
+                          if (_hasResult)
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 12, left: 6),
+                              child: Text(
+                                "g/km",
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black26,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          _statusMessage,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 35),
+
+                const Text(
+                  "VEHICLE SPECIFICATIONS",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textDark,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 15),
+
+                // --- INPUTS ---
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _engineController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        validator: _validateEngine,
+                        decoration: const InputDecoration(
+                          labelText: "Engine Size",
+                          helperText: "Max 10.0L", // Helpful guide
+                          suffixText: "L",
+                          prefixIcon: Icon(
+                            Icons.settings_input_component_outlined,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _cylindersController,
+                        keyboardType: TextInputType.number,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        validator: _validateCylinders,
+                        decoration: const InputDecoration(
+                          labelText: "Cylinders",
+                          helperText: "Min 3, Max 16", // Helpful guide
+                          suffixText: "cyl",
+                          prefixIcon: Icon(Icons.grid_view),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                TextFormField(
+                  controller: _fuelConsController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  validator: _validateFuel,
+                  decoration: const InputDecoration(
+                    labelText: "Combined Fuel Consumption",
+                    helperText: "Average L/100km (Max 50)", // Helpful guide
+                    suffixText: "L/100km",
+                    prefixIcon: Icon(Icons.local_gas_station_outlined),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Dropdown with Style
+                DropdownButtonFormField<String>(
+                  value: _selectedFuelType,
+                  decoration: const InputDecoration(
+                    labelText: "Fuel Type",
+                    prefixIcon: Icon(Icons.category_outlined),
+                  ),
+                  hint: const Text("Select fuel source"),
+                  icon: const Icon(Icons.keyboard_arrow_down),
+                  items: const [
+                    DropdownMenuItem(
+                      value: "X",
+                      child: Text("Regular Gasoline (X)"),
+                    ),
+                    DropdownMenuItem(
+                      value: "Z",
+                      child: Text("Premium Gasoline (Z)"),
+                    ),
+                    DropdownMenuItem(value: "D", child: Text("Diesel (D)")),
+                    DropdownMenuItem(
+                      value: "E",
+                      child: Text("Ethanol / E85 (E)"),
+                    ),
+                  ],
+                  onChanged: (val) => setState(() => _selectedFuelType = val),
+                  validator: (val) => val == null ? "Required" : null,
+                ),
+                const SizedBox(height: 40),
+
+                // --- BIG ACTION BUTTON ---
+                SizedBox(
+                  width: double.infinity,
+                  height: 60,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _calculateEmission,
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("ANALYZE IMPACT"),
+                  ),
+                ),
+                const SizedBox(height: 30),
               ],
-              const SizedBox(height: 40),
-            ],
+            ),
           ),
         ),
       ),
