@@ -1,23 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 void main() {
-  runApp(const EcoCarProApp());
+  runApp(const SinglePageApp());
 }
 
-class AppColors {
-  static const Color background = Color(0xFFF8F9FA);
-  static const Color cardColor = Colors.white;
-  static const Color primaryBrand = Color(0xFF2E7D32);
-  static const Color accentGreen = Color(0xFF00C853);
-  static const Color textDark = Color(0xFF1A1A1A);
-  static const Color textGrey = Color(0xFF546E7A);
-  static const Color errorRed = Color(0xFFD32F2F);
-}
-
-class EcoCarProApp extends StatelessWidget {
-  const EcoCarProApp({super.key});
+class SinglePageApp extends StatelessWidget {
+  const SinglePageApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -25,468 +16,395 @@ class EcoCarProApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'EcoCar Analyzer',
       theme: ThemeData(
-        scaffoldBackgroundColor: AppColors.background,
-        primaryColor: AppColors.primaryBrand,
+        primaryColor: const Color(0xFF2E7D32),
+        scaffoldBackgroundColor: const Color(0xFFF8F9FA),
         useMaterial3: true,
-        fontFamily: 'Roboto',
-        colorScheme: ColorScheme.fromSwatch().copyWith(
-          primary: AppColors.primaryBrand,
-          secondary: AppColors.accentGreen,
-        ),
-
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: AppColors.cardColor,
+          fillColor: Colors.white,
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 20,
+            horizontal: 16,
+            vertical: 16,
           ),
-          labelStyle: const TextStyle(
-            color: AppColors.textGrey,
-            fontWeight: FontWeight.w500,
-          ),
-          floatingLabelStyle: const TextStyle(
-            color: AppColors.primaryBrand,
-            fontWeight: FontWeight.bold,
-          ),
-          helperStyle: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-          errorStyle: const TextStyle(
-            color: AppColors.errorRed,
-            fontWeight: FontWeight.bold,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: AppColors.primaryBrand,
-              width: 2.5,
-            ),
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 2),
           ),
           errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.errorRed, width: 1.5),
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.red, width: 1.5),
+          ),
+          errorStyle: const TextStyle(
+            color: Colors.red,
+            fontWeight: FontWeight.bold,
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryBrand,
+            backgroundColor: const Color(0xFF2E7D32),
             foregroundColor: Colors.white,
-            elevation: 4,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
+              borderRadius: BorderRadius.circular(10),
             ),
           ),
         ),
       ),
-      home: const HomeScreen(),
+      home: const PredictionPage(),
     );
   }
 }
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class PredictionPage extends StatefulWidget {
+  const PredictionPage({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<PredictionPage> createState() => _PredictionPageState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _PredictionPageState extends State<PredictionPage> {
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController _engineController = TextEditingController();
   final TextEditingController _cylindersController = TextEditingController();
   final TextEditingController _fuelConsController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _engineController.addListener(_clearResultOnInput);
+    _cylindersController.addListener(_clearResultOnInput);
+    _fuelConsController.addListener(_clearResultOnInput);
+  }
+
+  @override
+  void dispose() {
+    _engineController.removeListener(_clearResultOnInput);
+    _cylindersController.removeListener(_clearResultOnInput);
+    _fuelConsController.removeListener(_clearResultOnInput);
+    _engineController.dispose();
+    _cylindersController.dispose();
+    _fuelConsController.dispose();
+    super.dispose();
+  }
+
+  void _clearResultOnInput() {
+    if (_resultDisplay != "---" || _emissionMessage.isNotEmpty || _showError) {
+      setState(() {
+        _resultDisplay = "---";
+        _emissionMessage = "";
+        _showError = false;
+      });
+    }
+  }
+
   String? _selectedFuelType;
 
-  String _co2Result = "0";
-  String _statusMessage = "Ready to Analyze";
+  // State
+  String _resultDisplay = "---";
+  String _emissionMessage = "";
   bool _isLoading = false;
-  bool _hasResult = false;
+  bool _showError = false;
 
+  final String apiUrl = 'https://my-insurance-api.onrender.com/predict';
+
+  // Validation with detailed error messages
   String? _validateEngine(String? val) {
-    if (val == null || val.isEmpty) return "Please enter engine size.";
+    if (val == null || val.isEmpty) return "Engine size is required";
     final n = double.tryParse(val);
-    if (n == null) return "Numbers only (e.g. 2.0)";
-    if (n <= 0) return "Must be greater than 0";
-    if (n > 10) return "Max engine size is 10.0 Liters";
+    if (n == null) return "Please enter a valid number";
+    if (n <= 0) return "Engine size must be greater than 0";
+    if (n > 10) return "Engine size cannot exceed 10.0 Liters";
     return null;
   }
 
   String? _validateCylinders(String? val) {
-    if (val == null || val.isEmpty) return "Please enter cylinders.";
+    if (val == null || val.isEmpty) return "Number of cylinders is required";
     final n = int.tryParse(val);
-    if (n == null) return "Whole numbers only (e.g. 4)";
+    if (n == null) return "Please enter a whole number";
     if (n < 3) return "Minimum 3 cylinders required";
-    if (n > 16) return "Max 16 cylinders allowed";
+    if (n > 16) return "Maximum 16 cylinders allowed";
     return null;
   }
 
   String? _validateFuel(String? val) {
-    if (val == null || val.isEmpty) return "Required.";
+    if (val == null || val.isEmpty) return "Fuel consumption is required";
     final n = double.tryParse(val);
-    if (n == null) return "Numbers only.";
-    if (n <= 0) return "Must be positive.";
-    if (n > 50) return "Max consumption is 50 L/100km";
+    if (n == null) return "Please enter a valid number";
+    if (n <= 0) return "Fuel consumption must be positive";
+    if (n > 50) return "Fuel consumption cannot exceed 50 L/100km";
     return null;
   }
 
-  // This is the api Logic
-  Future<void> _calculateEmission() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _getPrediction() async {
+    if (!_formKey.currentState!.validate()) {
+      setState(() {
+        _resultDisplay = "Please fix validation errors above";
+        _showError = true;
+      });
+      return;
+    }
+
     if (_selectedFuelType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select a Fuel Type")),
-      );
+      setState(() {
+        _resultDisplay = "Please select a fuel type";
+        _showError = true;
+      });
       return;
     }
 
     setState(() {
       _isLoading = true;
-      _statusMessage = "Analyzing vehicle specs...";
+      _showError = false;
     });
 
-    // my hosted render api
-    const String apiUrl = 'https://my-insurance-api.onrender.com/predict';
-
     try {
-      final requestData = {
-        "engine_size": double.parse(_engineController.text),
-        "cylinders": int.parse(_cylindersController.text),
-        "fuel_consumption": double.parse(_fuelConsController.text),
-        "fuel_type": _selectedFuelType,
-      };
-
       final response = await http.post(
         Uri.parse(apiUrl),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode(requestData),
+        body: jsonEncode({
+          "engine_size": double.parse(_engineController.text),
+          "cylinders": int.parse(_cylindersController.text),
+          "fuel_consumption": double.parse(_fuelConsController.text),
+          "fuel_type": _selectedFuelType,
+        }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final co2 = data['predicted_co2'];
+        final double co2 = (data['predicted_co2'] as num).toDouble();
+        String message;
+        if (co2 > 250) {
+          message = "High CO₂ emissions (Not Eco-Friendly)";
+        } else {
+          message = "Low CO₂ emissions (Eco-Friendly)";
+        }
         setState(() {
-          _co2Result = (co2 as double).toStringAsFixed(0);
-          _statusMessage = co2 < 250
-              ? "✅ Low Emissions (Eco-Friendly)"
-              : "⚠️ High Emissions (Gas Heavy)";
-          _hasResult = true;
+          _resultDisplay = "${co2.toStringAsFixed(1)} g/km";
+          _emissionMessage = message;
+          _showError = false;
+        });
+      } else if (response.statusCode == 422) {
+        // Server validation error
+        final errorData = jsonDecode(response.body);
+        String errorMsg = "Invalid input data";
+        if (errorData['detail'] != null &&
+            (errorData['detail'] as List).isNotEmpty) {
+          errorMsg = errorData['detail'][0]['msg'] ?? errorMsg;
+        }
+        setState(() {
+          _resultDisplay = "Error: $errorMsg";
+          _emissionMessage = "";
+          _showError = true;
         });
       } else {
         setState(() {
-          _statusMessage =
-              "Server Error: ${response.statusCode}. Check inputs.";
+          _resultDisplay = "Server Error ${response.statusCode}";
+          _emissionMessage = "";
+          _showError = true;
         });
       }
+    } on SocketException {
+      setState(() {
+        _resultDisplay = "Connection Failed - Check Internet";
+        _emissionMessage = "";
+        _showError = true;
+      });
     } catch (e) {
       setState(() {
-        _statusMessage = "Connection Failed. Check internet.";
+        _resultDisplay = "Error: ${e.toString()}";
+        _emissionMessage = "";
+        _showError = true;
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "EcoCar",
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.primaryBrand,
-                          ),
-                        ),
-                        Text(
-                          "Analyzer",
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w300,
-                            color: AppColors.textDark,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryBrand.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.public,
-                        color: AppColors.primaryBrand,
-                        size: 32,
-                      ),
-                    ),
-                  ],
+      appBar: AppBar(
+        title: const Text(
+          "EcoCar CO₂ Predictor",
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF2E7D32),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                "Enter Vehicle Details",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2E7D32),
                 ),
-                const SizedBox(height: 24),
+              ),
+              const SizedBox(height: 15),
 
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.blueGrey.shade100),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+              TextFormField(
+                controller: _engineController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                textInputAction: TextInputAction.next,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                validator: _validateEngine,
+                decoration: const InputDecoration(
+                  labelText: "Engine Size (L)",
+                  suffixText: "L",
+                  helperText: "Max 10.0 Liters",
+                  prefixIcon: Icon(Icons.settings_input_component),
+                ),
+              ),
+              const SizedBox(height: 15),
+
+              TextFormField(
+                controller: _cylindersController,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.next,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                validator: _validateCylinders,
+                decoration: const InputDecoration(
+                  labelText: "Cylinders",
+                  suffixText: "cyl",
+                  helperText: "3 to 16 cylinders",
+                  prefixIcon: Icon(Icons.grid_view),
+                ),
+              ),
+              const SizedBox(height: 15),
+
+              TextFormField(
+                controller: _fuelConsController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                textInputAction: TextInputAction.done,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                validator: _validateFuel,
+                decoration: const InputDecoration(
+                  labelText: "Fuel Consumption",
+                  suffixText: "L/100km",
+                  helperText: "Max 50 L/100km",
+                  prefixIcon: Icon(Icons.local_gas_station),
+                ),
+              ),
+              const SizedBox(height: 15),
+
+              DropdownButtonFormField<String>(
+                value: _selectedFuelType,
+                decoration: const InputDecoration(
+                  labelText: "Fuel Type",
+                  prefixIcon: Icon(Icons.category),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: "X",
+                    child: Text("Regular Gasoline (X)"),
                   ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                  DropdownMenuItem(
+                    value: "Z",
+                    child: Text("Premium Gasoline (Z)"),
+                  ),
+                  DropdownMenuItem(value: "D", child: Text("Diesel (D)")),
+                  DropdownMenuItem(value: "E", child: Text("Ethanol (E)")),
+                ],
+                onChanged: (v) {
+                  setState(() {
+                    _selectedFuelType = v;
+                    _resultDisplay = "---";
+                    _emissionMessage = "";
+                    _showError = false;
+                  });
+                },
+                validator: (v) => v == null ? "Fuel type is required" : null,
+              ),
+
+              const SizedBox(height: 30),
+
+              // The predicting button
+              ElevatedButton(
+                onPressed: _isLoading ? null : _getPrediction,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: _isLoading
+                    ? const CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      )
+                    : const Text(
+                        "Predict",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+
+              const SizedBox(height: 40),
+
+              // Display area
+              Container(
+                padding: const EdgeInsets.all(30),
+                decoration: BoxDecoration(
+                  color: _showError ? Colors.red[50] : Colors.green[50],
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: _showError ? Colors.red : Colors.green,
+                    width: 2,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      _showError ? "Error" : "Predicted CO₂ Emissions",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _showError ? Colors.red[700] : Colors.green[700],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _resultDisplay,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: _showError ? Colors.red[700] : Colors.green[700],
+                      ),
+                    ),
+                    if (!_showError && _resultDisplay != "---") ...[
+                      const SizedBox(height: 12),
                       Text(
-                        "What is this tool?",
+                        _emissionMessage,
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textDark,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        "Emission Analyzer is a smart tool designed to predict how much Carbon Dioxide (CO₂) new cars emit. By analyzing engine size and fuel consumption, we help you understand the environmental impact of your vehicle.",
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.5,
-                          color: AppColors.textGrey,
+                          fontWeight: FontWeight.w500,
+                          color: _emissionMessage.contains('High')
+                              ? Colors.red[800]
+                              : Colors.green[800],
                         ),
                       ),
                     ],
-                  ),
-                ),
-                const SizedBox(height: 30),
-
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 500),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 24,
-                    horizontal: 20,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: _hasResult
-                          ? [AppColors.primaryBrand, AppColors.accentGreen]
-                          : [Colors.grey.shade800, Colors.grey.shade700],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _hasResult
-                            ? AppColors.accentGreen.withOpacity(0.4)
-                            : Colors.transparent,
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        _hasResult ? "PREDICTED CO₂ OUTPUT" : "AWAITING INPUTS",
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            _hasResult ? _co2Result : "--",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 64,
-                              fontWeight: FontWeight.bold,
-                              height: 1,
-                            ),
-                          ),
-                          if (_hasResult)
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: 12, left: 6),
-                              child: Text(
-                                "g/km",
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black26,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          _statusMessage,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 35),
-
-                const Text(
-                  "VEHICLE SPECIFICATIONS",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 15),
-
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _engineController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        validator: _validateEngine,
-                        decoration: const InputDecoration(
-                          labelText: "Engine Size",
-                          helperText: "Max 10.0L",
-                          suffixText: "L",
-                          prefixIcon: Icon(
-                            Icons.settings_input_component_outlined,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _cylindersController,
-                        keyboardType: TextInputType.number,
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        validator: _validateCylinders,
-                        decoration: const InputDecoration(
-                          labelText: "Cylinders",
-                          helperText: "Min 3, Max 16",
-                          suffixText: "cyl",
-                          prefixIcon: Icon(Icons.grid_view),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
-                const SizedBox(height: 20),
-
-                TextFormField(
-                  controller: _fuelConsController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  validator: _validateFuel,
-                  decoration: const InputDecoration(
-                    labelText: "Combined Fuel Consumption",
-                    helperText: "Average L/100km (Max 50)",
-                    suffixText: "L/100km",
-                    prefixIcon: Icon(Icons.local_gas_station_outlined),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                DropdownButtonFormField<String>(
-                  value: _selectedFuelType,
-                  decoration: const InputDecoration(
-                    labelText: "Fuel Type",
-                    prefixIcon: Icon(Icons.category_outlined),
-                  ),
-                  hint: const Text("Select fuel source"),
-                  icon: const Icon(Icons.keyboard_arrow_down),
-                  items: const [
-                    DropdownMenuItem(
-                      value: "X",
-                      child: Text("Regular Gasoline (X)"),
-                    ),
-                    DropdownMenuItem(
-                      value: "Z",
-                      child: Text("Premium Gasoline (Z)"),
-                    ),
-                    DropdownMenuItem(value: "D", child: Text("Diesel (D)")),
-                    DropdownMenuItem(
-                      value: "E",
-                      child: Text("Ethanol / E85 (E)"),
-                    ),
-                  ],
-                  onChanged: (val) => setState(() => _selectedFuelType = val),
-                  validator: (val) => val == null ? "Required" : null,
-                ),
-                const SizedBox(height: 40),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 60,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _calculateEmission,
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text("ANALYZE IMPACT"),
-                  ),
-                ),
-                const SizedBox(height: 30),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
