@@ -1,123 +1,75 @@
-# EcoCar Analyzer: Intelligent CO₂ Emission Predictor
-## 1. Mission & Problem Statement
+# EcoCar Analyzer: CO₂ Emission Predictor
 
-Climate change is one of the most pressing challenges of our time, with vehicular emissions being a major contributor. The **EcoCar Analyzer** project aims to empower consumers and manufacturers by providing accurate predictions of a vehicle's Carbon Dioxide (CO₂) emissions based on its engine specifications.
+## Overview
 
-By analyzing key technical factors such as **Engine Size**, **Cylinder count**, and **Fuel Consumption** this tool democratizes environmental data, enabling more eco-conscious transportation choices.
+EcoCar Analyzer predicts vehicle CO₂ emissions based on engine specs using a machine learning model. It features:
 
-## 2. Data Description & Source
+- Python Jupyter notebook for model training
+- FastAPI backend for predictions
+- Flutter web/mobile app frontend
 
-The machine learning model was trained on the **Fuel Consumption Ratings** dataset, sourced from **Canada Open Data** (via IBM Developer Skills Network).
+## Data Source
 
-**Source URL:** https://www.kaggle.com/code/ginny100/ibm-ai-engineering-simple-linear-regression
+- Dataset: Fuel Consumption Ratings (Canada Open Data)
+- [Kaggle Link](https://www.kaggle.com/code/ginny100/ibm-ai-engineering-simple-linear-regression)
 
-### Dataset Statistics
-
-- **Volume:** 1,067 unique vehicle records
-- **Variety:** Numerical & Categorical data
-
-### Key Features
-
-- **Inputs (X):** Engine Size (L), Cylinders, Fuel Consumption (L/100km), Fuel Type (Regular, Premium, Ethanol, Diesel)
-- **Target (y):** CO₂ Emissions (g/km)
-
-**Insight:** Exploratory Data Analysis (EDA) revealed a strong linear correlation between Engine Size and Emissions, with additional non-linear effects introduced by differing fuel types.
-
-## 3. Technical Architecture
-
-This project follows a **decoupled Client-Server Architecture**:
-
-### Machine Learning Pipeline (Python/Jupyter)
-
-- Data Cleaning
-- Feature Engineering (One-Hot Encoding)
-- Model Training
-
-### Backend API (FastAPI)
-
-- REST model-serving endpoints
-- Pydantic for strict data validation
-- CORS middleware for secure access
-
-### Frontend Mobile App (Flutter)
-
-- Responsive high-contrast interface
-- Designed for efficient user interaction
-- **Here is the deployed link:** `https://ecocar-co2-predictor.netlify.app/`
-
-## 4. Model Performance
-
-Three regression algorithms were trained and evaluated using **Mean Squared Error (MSE)** and **R² Score**.
-
-| Model             | R² Score | Loss (MSE) | Verdict                                              |
-| ----------------- | -------- | ---------- | ---------------------------------------------------- |
-| Linear Regression | 0.9881   | 49.19      | High accuracy, but missed subtle fuel-type variances |
-| Random Forest     | 0.9908   | 37.86      | Excellent performance, slightly higher complexity    |
-| Decision Tree     | 0.9936   | 26.47      | **WINNER**                                           |
-
-**Justification:** The **Decision Tree Regressor** was deployed because it achieved the lowest MSE (26.47) and best captured categorical fuel-type behavior.
-
-## 5. Public API Access
-
-The prediction engine is deployed on **Render** and publicly accessible.
-
-- **Base Endpoint:** `https://my-insurance-api.onrender.com/`
-- **Docs (Swagger UI):** `https://my-insurance-api.onrender.com/docs`
-
-### Example JSON Request
-
-```json
-POST /predict
-{
-  "engine_size": 2.4,
-  "cylinders": 4,
-  "fuel_consumption": 8.5,
-  "fuel_type": "X"
-}
-```
-
-## 6. Video Demo
-
-A detailed 5-minute demonstration covering model training, API deployment, and a live walkthrough of the mobile application.
-
-**Click Here to Watch the Video Demo**
-
-## 7. How to Run the Mobile App
-
-The mobile application is built using **Flutter**.
-
-### Prerequisites
-
-- Flutter SDK installed
-- Android Emulator or physical device connected
-
-### Installation Steps
-
-```bash
-cd summative/flutterapp
-flutter pub get
-flutter run
-```
-
-## 8. Project Structure
+## Project Structure
 
 ```
 linear_regression_model/
 │
 ├── summative/
 │   ├── linear_regression/
-│   │   ├── multivariate.ipynb     # Jupyter Notebook (Analysis & Training)
-│   │
+│   │   ├── multivariate.ipynb         # Jupyter Notebook (EDA, training)
+│   │   └── content/FuelConsumptionCo2.csv
 │   ├── API/
-│   │   ├── main.py                 # FastAPI Application Code
-│   │   ├── requirements.txt        # Backend Dependencies
-│   │   ├── my_best_co2_model.pkl   # Serialized Model
-│   │   ├── my_scaler.pkl           # Data Scaler
-│   │   ├── model_columns.pkl       # Feature alignment
-│   │
-│   ├── flutterapp/
-│       ├── lib/
-│       │   ├── main.dart           # Mobile App Source Code
-│       ├── pubspec.yaml            # App Configuration
+│   │   ├── prediction.py              # FastAPI backend
+│   │   ├── requirements.txt
+│   │   ├── my_best_co2_model.pkl      # Trained model
+│   │   ├── my_scaler.pkl              # Scaler
+│   │   └── model_columns.pkl          # Feature columns
+│   └── flutterapp/
+│       ├── lib/main.dart              # Flutter app source
+│       ├── pubspec.yaml
+│       └── build/web/                 # Web build output (after flutter build web)
+└── README.md
 ```
-**Developed by Dushime Paulette**
+
+## Model Performance
+
+| Model             | R² Score |   MSE | Notes                     |
+| ----------------- | -------: | ----: | ------------------------- |
+| Linear Regression |   0.9881 | 49.19 | Good, but less robust     |
+| Random Forest     |   0.9908 | 37.86 | High accuracy             |
+| Decision Tree     |   0.9936 | 26.47 | **Deployed model (best)** |
+
+## API Usage
+
+- **Base URL:** `https://my-insurance-api.onrender.com/`
+- **Swagger Docs:** `/docs`
+
+**Example request:**
+
+```json
+POST /predict
+{
+  "engine_size": 2.0,
+  "cylinders": 4,
+  "fuel_consumption": 7.5,
+  "fuel_type": "X"
+}
+```
+
+## Flutter App
+
+- Web demo: [https://ecocar-co2-predictor.netlify.app/](https://ecocar-co2-predictor.netlify.app/)
+- To run locally:
+  ```sh
+  cd summative/flutterapp
+  flutter pub get
+  flutter run -d chrome
+  ```
+
+## Contributors
+
+Developed by Dushime Paulette
