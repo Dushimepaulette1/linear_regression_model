@@ -6,19 +6,14 @@ void main() {
   runApp(const EcoCarProApp());
 }
 
-// --- 🎨 PRO THEME: High Contrast & Friendly ---
 class AppColors {
-  static const Color background = Color(0xFFF8F9FA); // Crisp Off-White
+  static const Color background = Color(0xFFF8F9FA);
   static const Color cardColor = Colors.white;
-  static const Color primaryBrand = Color(
-    0xFF2E7D32,
-  ); // Professional Forest Green
-  static const Color accentGreen = Color(0xFF00C853); // Bright Highlight
-  static const Color textDark = Color(
-    0xFF1A1A1A,
-  ); // Almost Black (High Readability)
-  static const Color textGrey = Color(0xFF546E7A); // Blue-Grey for subtitles
-  static const Color errorRed = Color(0xFFD32F2F); // Readable Red
+  static const Color primaryBrand = Color(0xFF2E7D32);
+  static const Color accentGreen = Color(0xFF00C853);
+  static const Color textDark = Color(0xFF1A1A1A);
+  static const Color textGrey = Color(0xFF546E7A);
+  static const Color errorRed = Color(0xFFD32F2F);
 }
 
 class EcoCarProApp extends StatelessWidget {
@@ -38,7 +33,7 @@ class EcoCarProApp extends StatelessWidget {
           primary: AppColors.primaryBrand,
           secondary: AppColors.accentGreen,
         ),
-        // Making the inputs look inviting and clear
+
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: AppColors.cardColor,
@@ -111,25 +106,22 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // --- Input Controllers ---
   final TextEditingController _engineController = TextEditingController();
   final TextEditingController _cylindersController = TextEditingController();
   final TextEditingController _fuelConsController = TextEditingController();
   String? _selectedFuelType;
 
-  // --- State ---
   String _co2Result = "0";
   String _statusMessage = "Ready to Analyze";
   bool _isLoading = false;
   bool _hasResult = false;
 
-  // --- Validation Logic (User Friendly Messages) ---
   String? _validateEngine(String? val) {
     if (val == null || val.isEmpty) return "Please enter engine size.";
     final n = double.tryParse(val);
     if (n == null) return "Numbers only (e.g. 2.0)";
     if (n <= 0) return "Must be greater than 0";
-    if (n > 10) return "Max engine size is 10.0 Liters"; // Specific help!
+    if (n > 10) return "Max engine size is 10.0 Liters";
     return null;
   }
 
@@ -137,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (val == null || val.isEmpty) return "Please enter cylinders.";
     final n = int.tryParse(val);
     if (n == null) return "Whole numbers only (e.g. 4)";
-    if (n < 3) return "Minimum 3 cylinders required"; // Specific help!
+    if (n < 3) return "Minimum 3 cylinders required";
     if (n > 16) return "Max 16 cylinders allowed";
     return null;
   }
@@ -147,11 +139,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final n = double.tryParse(val);
     if (n == null) return "Numbers only.";
     if (n <= 0) return "Must be positive.";
-    if (n > 50) return "Max consumption is 50 L/100km"; // Specific help!
+    if (n > 50) return "Max consumption is 50 L/100km";
     return null;
   }
 
-  // --- API Logic ---
+  // This is the api Logic
   Future<void> _calculateEmission() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedFuelType == null) {
@@ -166,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _statusMessage = "Analyzing vehicle specs...";
     });
 
-    // ⚠️ PASTE YOUR RENDER URL HERE
+    // my hosted render api
     const String apiUrl = 'https://my-insurance-api.onrender.com/predict';
 
     try {
@@ -219,10 +211,8 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.stretch, // Makes everything full width
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // --- HEADER ---
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -263,7 +253,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // --- INTRO CARD (User Request) ---
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -303,7 +292,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 30),
 
-                // --- RESULT DASHBOARD ---
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 500),
                   padding: const EdgeInsets.symmetric(
@@ -402,7 +390,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 15),
 
-                // --- INPUTS ---
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -416,7 +403,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         validator: _validateEngine,
                         decoration: const InputDecoration(
                           labelText: "Engine Size",
-                          helperText: "Max 10.0L", // Helpful guide
+                          helperText: "Max 10.0L",
                           suffixText: "L",
                           prefixIcon: Icon(
                             Icons.settings_input_component_outlined,
@@ -433,7 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         validator: _validateCylinders,
                         decoration: const InputDecoration(
                           labelText: "Cylinders",
-                          helperText: "Min 3, Max 16", // Helpful guide
+                          helperText: "Min 3, Max 16",
                           suffixText: "cyl",
                           prefixIcon: Icon(Icons.grid_view),
                         ),
@@ -452,14 +439,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   validator: _validateFuel,
                   decoration: const InputDecoration(
                     labelText: "Combined Fuel Consumption",
-                    helperText: "Average L/100km (Max 50)", // Helpful guide
+                    helperText: "Average L/100km (Max 50)",
                     suffixText: "L/100km",
                     prefixIcon: Icon(Icons.local_gas_station_outlined),
                   ),
                 ),
                 const SizedBox(height: 20),
 
-                // Dropdown with Style
                 DropdownButtonFormField<String>(
                   value: _selectedFuelType,
                   decoration: const InputDecoration(
@@ -488,7 +474,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // --- BIG ACTION BUTTON ---
                 SizedBox(
                   width: double.infinity,
                   height: 60,

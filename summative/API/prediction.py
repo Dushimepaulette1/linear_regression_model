@@ -4,14 +4,14 @@ import joblib
 import pandas as pd
 from fastapi.middleware.cors import CORSMiddleware
 
-# 1. Initialize the App
+# initializing the app
 app = FastAPI(
     title="EcoCar CO2 Predictor",
     description="API to predict car CO2 emissions based on engine specs.",
     version="2.0.0"
 )
 
-# 2. CORS Middleware (Rubric Requirement)
+# This is the CORS middleware setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,17 +20,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 3. Load the New CO2 Model Files
+# Loaing the new CO2 Model and Scaler
 try:
     model = joblib.load('my_best_co2_model.pkl')
     scaler = joblib.load('my_scaler.pkl')
     model_columns = joblib.load('model_columns.pkl')
-    print("✅ CO2 Model and tools loaded successfully.")
+    print("CO2 Model and tools loaded successfully.")
 except Exception as e:
-    print(f"❌ Error loading files: {e}")
+    print(f"Error loading files: {e}")
 
-# 4. Define Input Rules (Pydantic)
-# We need: Engine Size, Cylinders, Combined Consumption, Fuel Type
+# Engine Size, Cylinders, Combined Consumption, Fuel Type
 class CarInput(BaseModel):
     engine_size: float = Field(..., gt=0.0, le=10.0, description="Engine Size in Liters (0.0 - 10.0)")
     cylinders: int = Field(..., gt=2, le=16, description="Number of Cylinders (3-16)")
@@ -51,8 +50,7 @@ class CarInput(BaseModel):
 @app.post("/predict")
 def predict_emissions(input_data: CarInput):
     try:
-        # A. Convert Input to Dictionary
-        # Map Pydantic fields to the exact column names used in Colab
+        # Mapping Pydantic fields to the exact column names used in Colab
         data_dict = {
             "Engine_Size": input_data.engine_size,
             "Cylinders": input_data.cylinders,
@@ -60,19 +58,18 @@ def predict_emissions(input_data: CarInput):
             "Fuel_Type": input_data.fuel_type
         }
         
-        # B. Convert to DataFrame
+        # Converting to DataFrame
         input_df = pd.DataFrame([data_dict])
-        
-        # C. Preprocessing (One-Hot Encoding)
+    
         input_encoded = pd.get_dummies(input_df)
         
-        # D. Align Columns (Add missing Fuel_Type columns with 0)
+        # Aligning Columns 
         input_encoded = input_encoded.reindex(columns=model_columns, fill_value=0)
         
-        # E. Scale the Data
+        # E. Scaling the Data
         input_scaled = scaler.transform(input_encoded)
         
-        # F. Predict
+        # F. Predicting
         prediction = model.predict(input_scaled)
         
         return {
