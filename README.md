@@ -43,6 +43,7 @@ This project follows a **decoupled Client-Server Architecture**:
 
 - Responsive high-contrast interface
 - Designed for efficient user interaction
+- **Here is the deployed link:** `https://ecocar-co2-predictor.netlify.app/`
 
 ## 4. Model Performance
 
@@ -105,7 +106,7 @@ linear_regression_model/
 │
 ├── summative/
 │   ├── linear_regression/
-│   │   ├── multivariate.ipynb      # Jupyter Notebook (Analysis & Training)
+│   │   ├── multivariate.ipynb     # Jupyter Notebook (Analysis & Training)
 │   │
 │   ├── API/
 │   │   ├── main.py                 # FastAPI Application Code
