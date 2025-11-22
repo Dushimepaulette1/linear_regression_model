@@ -12,17 +12,17 @@ By analyzing key technical factors such as **Engine Size**, **Cylinder count**, 
 
 The machine learning model was trained on the **Fuel Consumption Ratings** dataset, sourced from **Canada Open Data** (via IBM Developer Skills Network).
 
-**Source URL:** https://www.kaggle.com/code/ginny100/ibm-ai-engineering-simple-linear-regression 
+**Source URL:** https://www.kaggle.com/code/ginny100/ibm-ai-engineering-simple-linear-regression
 
 ### Dataset Statistics
 
-* **Volume:** 1,067 unique vehicle records
-* **Variety:** Numerical & Categorical data
+- **Volume:** 1,067 unique vehicle records
+- **Variety:** Numerical & Categorical data
 
 ### Key Features
 
-* **Inputs (X):** Engine Size (L), Cylinders, Fuel Consumption (L/100km), Fuel Type (Regular, Premium, Ethanol, Diesel)
-* **Target (y):** CO₂ Emissions (g/km)
+- **Inputs (X):** Engine Size (L), Cylinders, Fuel Consumption (L/100km), Fuel Type (Regular, Premium, Ethanol, Diesel)
+- **Target (y):** CO₂ Emissions (g/km)
 
 **Insight:** Exploratory Data Analysis (EDA) revealed a strong linear correlation between Engine Size and Emissions, with additional non-linear effects introduced by differing fuel types.
 
@@ -34,20 +34,20 @@ This project follows a **decoupled Client-Server Architecture**:
 
 ### Machine Learning Pipeline (Python/Jupyter)
 
-* Data Cleaning
-* Feature Engineering (One-Hot Encoding)
-* Model Training
+- Data Cleaning
+- Feature Engineering (One-Hot Encoding)
+- Model Training
 
 ### Backend API (FastAPI)
 
-* REST model-serving endpoints
-* Pydantic for strict data validation
-* CORS middleware for secure access
+- REST model-serving endpoints
+- Pydantic for strict data validation
+- CORS middleware for secure access
 
 ### Frontend Mobile App (Flutter)
 
-* Responsive high-contrast interface
-* Designed for efficient user interaction
+- Responsive high-contrast interface
+- Designed for efficient user interaction
 
 ---
 
@@ -69,8 +69,8 @@ Three regression algorithms were trained and evaluated using **Mean Squared Erro
 
 The prediction engine is deployed on **Render** and publicly accessible.
 
-* **Base Endpoint:** `https://[YOUR-APP-NAME].onrender.com`
-* **Docs (Swagger UI):** `https://[YOUR-APP-NAME].onrender.com/docs`
+- **Base Endpoint:** `https://my-insurance-api.onrender.com/`
+- **Docs (Swagger UI):** `https://my-insurance-api.onrender.com/docs`
 
 ### Example JSON Request
 
@@ -100,13 +100,13 @@ The mobile application is built using **Flutter**.
 
 ### Prerequisites
 
-* Flutter SDK installed
-* Android Emulator or physical device connected
+- Flutter SDK installed
+- Android Emulator or physical device connected
 
 ### Installation Steps
 
 ```bash
-cd summative/FlutterApp
+cd summative/flutterapp
 flutter pub get
 flutter run
 ```
@@ -129,7 +129,7 @@ linear_regression_model/
 │   │   ├── my_scaler.pkl           # Data Scaler
 │   │   ├── model_columns.pkl       # Feature alignment
 │   │
-│   ├── FlutterApp/
+│   ├── flutterapp/
 │       ├── lib/
 │       │   ├── main.dart           # Mobile App Source Code
 │       ├── pubspec.yaml            # App Configuration
