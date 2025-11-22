@@ -1,12 +1,9 @@
 # EcoCar Analyzer: Intelligent CO₂ Emission Predictor
-
 ## 1. Mission & Problem Statement
 
 Climate change is one of the most pressing challenges of our time, with vehicular emissions being a major contributor. The **EcoCar Analyzer** project aims to empower consumers and manufacturers by providing accurate predictions of a vehicle's Carbon Dioxide (CO₂) emissions based on its engine specifications.
 
 By analyzing key technical factors such as **Engine Size**, **Cylinder count**, and **Fuel Consumption** this tool democratizes environmental data, enabling more eco-conscious transportation choices.
-
----
 
 ## 2. Data Description & Source
 
@@ -25,8 +22,6 @@ The machine learning model was trained on the **Fuel Consumption Ratings** datas
 - **Target (y):** CO₂ Emissions (g/km)
 
 **Insight:** Exploratory Data Analysis (EDA) revealed a strong linear correlation between Engine Size and Emissions, with additional non-linear effects introduced by differing fuel types.
-
----
 
 ## 3. Technical Architecture
 
@@ -49,8 +44,6 @@ This project follows a **decoupled Client-Server Architecture**:
 - Responsive high-contrast interface
 - Designed for efficient user interaction
 
----
-
 ## 4. Model Performance
 
 Three regression algorithms were trained and evaluated using **Mean Squared Error (MSE)** and **R² Score**.
@@ -62,8 +55,6 @@ Three regression algorithms were trained and evaluated using **Mean Squared Erro
 | Decision Tree     | 0.9936   | 26.47      | **WINNER**                                           |
 
 **Justification:** The **Decision Tree Regressor** was deployed because it achieved the lowest MSE (26.47) and best captured categorical fuel-type behavior.
-
----
 
 ## 5. Public API Access
 
@@ -84,15 +75,11 @@ POST /predict
 }
 ```
 
----
-
 ## 6. Video Demo
 
 A detailed 5-minute demonstration covering model training, API deployment, and a live walkthrough of the mobile application.
 
 **Click Here to Watch the Video Demo**
-
----
 
 ## 7. How to Run the Mobile App
 
@@ -110,8 +97,6 @@ cd summative/flutterapp
 flutter pub get
 flutter run
 ```
-
----
 
 ## 8. Project Structure
 
@@ -134,7 +119,4 @@ linear_regression_model/
 │       │   ├── main.dart           # Mobile App Source Code
 │       ├── pubspec.yaml            # App Configuration
 ```
-
----
-
-**Developed by Paulette for the Linear Regression Summative Assignment.**
+**Developed by Dushime Paulette**
